@@ -1,4 +1,5 @@
 import numpy as np
+import tensorflow as tf
 
 class Encoder():
     def __init__(self, data):
@@ -7,16 +8,21 @@ class Encoder():
 class Characters(Encoder):
     def __init__(self, data):
         super().__init__(data)
-        self.unique_chars = len(set(self.data))
-        self.char_to_code = {char: idx for idx, char in enumerate(sorted(set(self.data)))}
-        self.code_to_char = {idx: char for char, idx in self.char_to_code.items()}
-        self.int_encoded = [self.char_to_code[char] for char in self.data]
+        vocab = sorted(set(self.data))
+        self.data = tf.strings.unicode_split(self.data, input_encoding='UTF-8')
+        
+        self.unique_chars = len(vocab)
+        self.char_to_code = tf.keras.layers.StringLookup(vocabulary=list(vocab), mask_token=None)
+        self.code_to_char = tf.keras.layers.StringLookup(
+            vocabulary = self.char_to_code.get_vocabulary(), mask_token=None, invert=True)
+        self.int_encoded = self.char_to_code(self.data)
 
     def random_train_data(self, input_length, n):
-        start_indices = np.random.choice(len(self.data) - input_length, n, replace=False)
-        sequences_array = np.array([self.int_encoded[i:i + input_length + 1] for i in start_indices])
-        X = sequences_array[:,:input_length]
-        y = sequences_array[:,-1]
+        ids = self.int_encoded.numpy()
+        start_indices = np.random.choice(len(ids) - input_length, n, replace=False)
+        sequences = np.array([ids[start:start+input_length + 1] for start in start_indices])
+        X = sequences[:,:input_length]
+        y = sequences[:,-1]
         return (X, y) 
     
     def normalise_encoded(self, text_encode = None):
@@ -27,6 +33,7 @@ class Characters(Encoder):
         
     def decode(self, text_decode = None):
         if text_decode is None:
-            return ''.join([self.code_to_char[code] for code in self.int_encoded])
+            chars = self.code_to_char(self.int_encoded)
         else:
-            return ''.join([self.code_to_char[code] for code in text_decode])
+            chars = self.code_to_char(text_decode)
+        return tf.strings.reduce_join(chars, axis=-1).numpy()

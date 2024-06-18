@@ -19,7 +19,6 @@ class Dataset:
                 processed_lines.append(stripped_line)
 
         # Concatenate all the lines with a space between each
-        result = ' '.join(processed_lines)
-        self.raw_text = np.array(list(result))
+        self.raw_text = ' '.join(processed_lines)
     
-shakespeare = Dataset(os.path.join(__file__, '../alllines.txt'))
+shakespeare = Dataset(os.path.join(__file__, '../data/shakespeare_alllines.txt'))
