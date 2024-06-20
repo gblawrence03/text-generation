@@ -6,12 +6,15 @@ class WrapCharEmbed():
         self.encoder = encoder
 
     def create(self, embedding_dim, dense_units):
+        self.char_embed = CharEmbed(self.encoder.unique_chars, embedding_dim, dense_units)
         self.model = tf.keras.Sequential([self.encoder.char_to_code, 
-                                          CharEmbed(self.encoder.unique_chars, embedding_dim, dense_units), 
+                                          self.char_embed, 
                                           self.encoder.code_to_char])
     
     def train(self, X_train, y_train, epochs):
-        self.model.fit(X_train, y_train, epochs=epochs, verbose=2)
+        X_train = self.encoder.char_to_code(X_train)
+        y_train = self.encoder.char_to_code(y_train)
+        self.char_embed.fit(X_train, y_train, epochs=epochs, verbose=2)
     
     def evaluate(self, X_test, y_test):
         test_loss, test_acc = self.model.evaluate(X_test,  y_test, verbose=2)
