@@ -17,10 +17,17 @@ class Characters(Encoder):
             vocabulary = self.char_to_code.get_vocabulary(), mask_token=None, invert=True)
         self.int_encoded = self.char_to_code(self.data)
 
-    def random_train_data(self, input_length, n):
+    def random_train_data_enc(self, input_length, n):
         ids = self.int_encoded.numpy()
         start_indices = np.random.choice(len(ids) - input_length, n, replace=False)
         sequences = np.array([ids[start:start+input_length + 1] for start in start_indices])
+        X = sequences[:,:input_length]
+        y = sequences[:,-1]
+        return (X, y) 
+    
+    def random_train_data_raw(self, input_length, n):
+        start_indices = np.random.choice(len(self.data) - input_length, n, replace=False)
+        sequences = np.array([self.data[start:start+input_length + 1] for start in start_indices])
         X = sequences[:,:input_length]
         y = sequences[:,-1]
         return (X, y) 
