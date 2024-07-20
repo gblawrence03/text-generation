@@ -16,6 +16,9 @@ class WrapCharEmbed():
     def load(self, filename):
         self.char_embed = CharEmbed()
         self.char_embed.load(self.encoder, filename)
+        self.inference_model = tf.keras.Sequential([
+                                    self.char_embed, 
+                                    tf.keras.layers.Softmax()])
     
     def train(self, X_train, y_train, epochs):
         X_train = self.encoder.char_to_code(X_train)
@@ -30,6 +33,8 @@ class WrapCharEmbed():
 
     # Predicts a single character. input_sequence is assumed to be encoded
     def single_step(self, input_sequence, temperature=1.0):
+        input_sequence = self.encoder.char_to_code(input_sequence)
+        print(len(input_sequence))
         predictions = self.inference_model.predict(input_sequence, verbose=0)
         if (temperature != 0):
             predictions = np.log(predictions + 1e-10) / temperature
@@ -60,7 +65,6 @@ class CharEmbed(tf.keras.Model):
         
     def call(self, inputs, training=False): 
         x = inputs
-        print(x)
         x = self.embedding(x)#x = tf.keras.ops.squeeze(self.embedding(inputs, training=training))
         
         x = self.dense(x, training=training)
@@ -109,9 +113,15 @@ class CharEmbed(tf.keras.Model):
         self.encoder = encoder
 
 class EmbedSqueeze(layers.Layer):
-    def __init__(self, dim=32):
+    def __init__(self, dim=32, trainable=False, dtype='float32'):
         super().__init__()
         self.embedding = layers.Embedding(dim, 1)
+        self.reshape = layers.Reshape((-1,))  # Reshape to (-1,) removes any dimension of size 1
+    
+    def build(self, input_shape):
+        # Call build on the embedding layer to ensure its weights are created
+        self.embedding.build(input_shape)
 
     def call(self, inputs):
-        return ops.squeeze(self.embedding(inputs))
+        x = self.embedding(inputs)
+        return self.reshape(x)

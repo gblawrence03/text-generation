@@ -12,7 +12,7 @@ def train(epochs=10, model_file=None):
 
     input_length = 50
 
-    (X, y) = encoder.random_train_data_raw(input_length, 2000000)
+    (X, y) = encoder.random_train_data_raw(input_length, 200000)
 
     X_train, X_test, y_train, y_test = sk.train_test_split(X,y,test_size=0.2)
 
