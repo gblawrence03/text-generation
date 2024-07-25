@@ -7,6 +7,6 @@ from char_embed_feedforward import char_embed_train, char_embed_test
 
 #naive_test.run(10, model_file='models/test_model_2.keras')
 #naive_train.train(model_file='models/test_model_2.keras')
-#char_embed_train.train(model_file='models/test_model_3.keras')
+char_embed_train.train(model_file='models/test_model_3.keras')
 
-char_embed_test.run(10, model_file='models/test_model_3.keras')
+#char_embed_test.run(10, model_file='models/test_model_3.keras')

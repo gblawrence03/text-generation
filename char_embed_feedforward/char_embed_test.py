@@ -4,13 +4,10 @@ from char_embed_feedforward.char_embed import WrapCharEmbed
 text = datasets.shakespeare.raw_text
 encoder = encoders.Characters(text)
 
-input_length = 50
-
-(X_test, y_test) = encoder.random_train_data_raw(input_length, 10000)
-
-model = WrapCharEmbed(encoder)
-
 def run(samples, model_file=None):
+    input_length = 50
+    (X_test, y_test) = encoder.random_train_data_raw(input_length, 10000)
+    model = WrapCharEmbed(encoder, input_length)
     if model_file is not None:
         model.load("models/test_model_3.keras")
     # model.evaluate(X_test, y_test)

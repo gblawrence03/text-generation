@@ -16,7 +16,7 @@ def train(epochs=10, model_file=None):
 
     X_train, X_test, y_train, y_test = sk.train_test_split(X,y,test_size=0.2)
 
-    model = WrapCharEmbed(encoder)
+    model = WrapCharEmbed(encoder, input_length)
     model.create(128)
 
     model.train(X_train, y_train, epochs)

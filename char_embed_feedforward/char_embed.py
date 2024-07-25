@@ -4,11 +4,12 @@ from keras import ops
 from keras import layers
 
 class WrapCharEmbed():
-    def __init__(self, encoder):
+    def __init__(self, encoder, input_length):
+        self.input_length = input_length
         self.encoder = encoder
 
     def create(self, dense_units):
-        self.char_embed = CharEmbed(vocab_size=self.encoder.unique_chars, dense_units=dense_units)
+        self.char_embed = CharEmbed(input_length=self.input_length, vocab_size=self.encoder.unique_chars, dense_units=dense_units)
         self.inference_model = tf.keras.Sequential([
                                           self.char_embed, 
                                           tf.keras.layers.Softmax()])
@@ -31,11 +32,11 @@ class WrapCharEmbed():
         test_loss, test_acc = self.char_embed.evaluate(X_test,  y_test, verbose=2)
         print('\nTest accuracy:', test_acc)
 
-    # Predicts a single character. input_sequence is assumed to be encoded
+    # Predicts a single character. input_sequence is assumed to be in raw form
     def single_step(self, input_sequence, temperature=1.0):
         input_sequence = self.encoder.char_to_code(input_sequence)
         print(len(input_sequence))
-        predictions = self.inference_model.predict(input_sequence, verbose=0)
+        predictions = self.inference_model(input_sequence)
         if (temperature != 0):
             predictions = np.log(predictions + 1e-10) / temperature
             exp_predictions = np.exp(predictions)
@@ -47,14 +48,14 @@ class WrapCharEmbed():
         self.char_embed.save(filename=model_file)
 
 class CharEmbed(tf.keras.Model):
-    def __init__(self, vocab_size=None, dense_units=None):
+    def __init__(self, input_length=50, vocab_size=None, dense_units=None):
         super().__init__()
         if vocab_size and dense_units:
-            self.create(vocab_size, dense_units)
+            self.create(vocab_size, dense_units, input_length)
 
 
-    def create(self, vocab_size, dense_units):
-        self.embedding = EmbedSqueeze(vocab_size + 1)
+    def create(self, vocab_size, dense_units, input_length):
+        self.embedding = EmbedSqueeze(dim=vocab_size+1)
         self.dense = layers.Dense(dense_units, activation="relu")
         self.dense_output = layers.Dense(vocab_size + 1, activation="relu")
         self.model = tf.keras.Sequential([self.embedding, self.dense, self.dense_output])
@@ -65,6 +66,7 @@ class CharEmbed(tf.keras.Model):
         
     def call(self, inputs, training=False): 
         x = inputs
+        print(f'call: {x.shape}')
         x = self.embedding(x)#x = tf.keras.ops.squeeze(self.embedding(inputs, training=training))
         
         x = self.dense(x, training=training)
@@ -116,12 +118,18 @@ class EmbedSqueeze(layers.Layer):
     def __init__(self, dim=32, trainable=False, dtype='float32'):
         super().__init__()
         self.embedding = layers.Embedding(dim, 1)
-        self.reshape = layers.Reshape((-1,))  # Reshape to (-1,) removes any dimension of size 1
+        #self.reshape = layers.Reshape((-1,))  # Reshape to (-1,) removes any dimension of size 1
     
     def build(self, input_shape):
         # Call build on the embedding layer to ensure its weights are created
         self.embedding.build(input_shape)
 
     def call(self, inputs):
+        print(self.embedding.shape)
         x = self.embedding(inputs)
-        return self.reshape(x)
+        print(f'before squeeze: {x.shape}')
+        newdim = tuple([i for i in x.shape.as_list() if i != 1 and i is not None])
+        reshape = layers.Reshape(newdim)
+        y = reshape(x)
+        print(f'after squeeze: {y.shape}')
+        return y
