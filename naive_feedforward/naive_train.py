@@ -1,6 +1,7 @@
 import tensorflow as tf
 import sklearn.model_selection as sk
-from common import datasets, encoders    
+from preprocessing import encoders    
+from datasets import datasets
 from naive_feedforward.naive import Naive 
 
 def train(epochs=10, model_file=None):

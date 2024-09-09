@@ -1,0 +1,76 @@
+import unittest
+import numpy as np
+import keras
+from sklearn.model_selection import train_test_split
+
+class TestSimpleFFNModel(unittest.TestCase):
+    def __init__(self, method):
+        self.text = shakespeare.raw_text
+        self.encoder = Characters(self.text)
+        self.model = SimpleFFNModel(self.encoder.vocab_size, hidden_layers_units = [128, 128, 128])
+        super().__init__(method)
+
+    def test_simple_ffn_rescale(self):
+        vocab_size = 4
+        input_length = 3
+        model = SimpleFFNModel(vocab_size, input_length)
+        self.run_rescale_test(model, vocab_size, [1, 2, 3])
+        self.run_rescale_test(model, vocab_size, [0, 1, 3])
+        self.run_rescale_test(model, vocab_size, [0, 2, 3])
+
+    def test_simple_ffm(self):
+        vocab_size = 4
+        model = SimpleFFNModel(vocab_size)
+        model.compile(loss=keras.losses.categorical_crossentropy)
+        model(np.array([[3,1,0]]))
+        model.fit(np.array([[3, 1, 0],[1,2,3]]), np.array([[0, 0, 1, 0], [0, 1, 0, 0]]), verbose=0)
+        model(np.array([[3,1,0]]))
+
+    def test_train_simple_ffm(self):
+        print("Getting sequences...")
+        input_length = 24
+        X, y = self.encoder.random_train_data_enc(input_length, 500000)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+
+        print("Training...")
+        train(self.model, X_train, y_train, epochs=10, batch_size=32)
+
+        print("Testing...")
+        self.model.evaluate(X_test, y_test, verbose=2)
+
+        # Test single character prediction with correct and incorrect input lengths
+        c = predict_next(self.model, range(input_length), temperature=1) 
+        print(self.encoder.decode(c))
+        c = predict_next(self.model, range(input_length + 2), input_length=input_length, temperature=1)
+        print(self.encoder.decode(c))
+
+        # Test sequence generation
+        input_text = self.encoder.encode("Hello! This is a cool test.")
+        generated = generate_next(self.model, input_text, input_length=input_length, temperature=0.7)
+        decoded = self.encoder.decode(generated)
+        print(f"{decoded[:len(input_text)]}|{decoded[-(len(generated) - len(input_text)):]}")
+        
+    def run_rescale_test(self, model, vocab_size, test_input):
+        expected_output = [x / (vocab_size) for x in test_input]
+        self.assertListEqual(list(model.rescale(test_input)), expected_output)
+    
+"""Deal with stupid annoying relative imports 
+(thanks to Paolo Rovelli's answer at
+https://stackoverflow.com/questions/11536764/how-to-fix-attempted-relative-import-in-non-package-even-with-init-py"""
+if __name__ == '__main__':
+    if __package__ is None:
+        import sys
+        from os import path
+        sys.path.append( path.dirname( path.dirname( path.abspath(__file__) ) ) )
+        from models.simple_ffn import SimpleFFNModel
+        from training.trainer import train
+        from datasets.datasets import shakespeare
+        from preprocessing.encoders import Characters
+        from inference.generator import predict_next, generate_next
+    else:
+        from ..models.simple_ffn import SimpleFFNModel
+        from ..training.trainer import train
+        from ..datasets.datasets import shakespeare
+        from ..preprocessing.encoders import Characters
+        from ..inference.generator import predict_next, generate_next
+    unittest.main()

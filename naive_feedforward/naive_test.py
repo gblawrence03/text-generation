@@ -1,4 +1,5 @@
-from common import datasets, encoders
+from preprocessing import encoders
+from datasets import datasets
 from naive_feedforward.naive import Naive 
 
 def run(samples, model_file=None):
