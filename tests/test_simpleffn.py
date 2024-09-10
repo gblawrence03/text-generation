@@ -19,7 +19,7 @@ class TestSimpleFFNModel(unittest.TestCase):
         self.run_rescale_test(model, vocab_size, [0, 2, 3])
 
     @unittest.skip
-    def test_simple_ffm(self):
+    def test_simple_ffn(self):
         vocab_size = 4
         model = SimpleFFNModel(vocab_size)
         model.compile(loss=keras.losses.categorical_crossentropy)
@@ -27,7 +27,7 @@ class TestSimpleFFNModel(unittest.TestCase):
         model.fit(np.array([[3, 1, 0],[1,2,3]]), np.array([[0, 0, 1, 0], [0, 1, 0, 0]]), verbose=0)
         model(np.array([[3,1,0]]))
 
-    def test_train_simple_ffm(self):
+    def test_train_simple_ffn(self):
         print("Getting sequences...")
         input_length = 24
         X, y = self.encoder.random_train_data_enc(input_length, 10000)
@@ -38,9 +38,8 @@ class TestSimpleFFNModel(unittest.TestCase):
         train(model, X_train, y_train, epochs=5, batch_size=32, save_name="test")
 
         print("Loading...")
-        latest = load_latest("test")
-        print(latest)
-        model = keras.models.load_model(latest, custom_objects={'SimpleFFNModel': SimpleFFNModel})
+        model = load_latest("test")
+        print(type(model))
 
         print("Testing...")
         model.evaluate(X_test, y_test, verbose=2)

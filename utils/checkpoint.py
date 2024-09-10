@@ -1,23 +1,24 @@
 """Utilities for saving and loading model checkpoints.
 """
 
+import keras
 import os
 import re
 
 def load_latest(save_name):
-    """Gets the latest save file for the given save name.
+    """Gets the latest model checkpoint for the given save name.
 
     :param save_name: The folder within checkpoints/ to search.
     :type save_name: str
     :raises FileNotFoundError: If the directory cannot be found or the latest save cannot be determined.
-    :return: The file path for the latest save.
-    :rtype: str
+    :return: The latest saved model checkpoint
+    :rtype: Keras.Model
     """
     checkpoint_dir = os.path.normpath(f"checkpoints/{save_name}/")
     latest = latest_checkpoint(checkpoint_dir)
     if latest is None:
-        raise FileNotFoundError(f"The model save folder '{checkpoint_dir}' could not be found.")
-    return latest
+        raise FileNotFoundError(f"The model save in folder '{checkpoint_dir}' could not be found.")
+    return keras.models.load_model(latest)
 
 def latest_checkpoint(checkpoint_dir):
     """Searches through the given directory for the latest checkpoint.
