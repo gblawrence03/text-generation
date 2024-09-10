@@ -1,3 +1,6 @@
+"""Provides functions for generating output from models.
+"""
+
 import numpy as np
 import warnings 
 

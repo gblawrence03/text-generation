@@ -13,13 +13,15 @@ class SimpleFFNModel(Model):
     :param hidden_layers_units: List of sizes of hidden layers, defaults to None
     :type hidden_layers_units: List[int], optional
     """
-    def __init__(self, vocab_size, hidden_units=128, hidden_layers_units=None):
+    def __init__(self, vocab_size, hidden_units=128, hidden_layers_units=None, **kwargs):
         """Contructor"""
         super().__init__()
         self.vocab_size = vocab_size
 
-        if hidden_layers_units is None:
-            hidden_layers_units = [hidden_units]
+        self.hidden_layers_units = hidden_layers_units
+
+        if self.hidden_layers_units is None:
+            self.hidden_layers_units = [hidden_units]
         if not hidden_layers_units:
             raise ValueError(("At least one of 'hidden_units' or "
                              "'hidden_layers_units' must be specified."))
@@ -37,3 +39,14 @@ class SimpleFFNModel(Model):
         for layer in self.hidden_layers:
             x = layer(x)
         return self.output_layer(x)
+    
+    def get_config(self): 
+        config = {'vocab_size': self.vocab_size, 'hidden_layers_units': self.hidden_layers_units}
+        base_config = super().get_config()
+        return dict(list(base_config.items()) + list(config.items()))
+    
+    @classmethod 
+    def from_config(cls, config):
+        vocab_size = config.get('vocab_size')
+        hidden_layers_units = config.get('hidden_layers_units')
+        return cls(vocab_size=vocab_size, hidden_layers_units=hidden_layers_units)

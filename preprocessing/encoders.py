@@ -1,3 +1,6 @@
+"""Provides classes for encoding text.
+"""
+
 import numpy as np
 import tensorflow as tf
 
