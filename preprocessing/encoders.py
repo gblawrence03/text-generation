@@ -9,9 +9,13 @@ class Encoder():
         self.data = data
 
 class Characters(Encoder):
-    def __init__(self, data):
+    def __init__(self, data, padding_char=' '):
         super().__init__(data)
         vocab = sorted(set(self.data))
+        # Add placeholder character for vocab
+        if padding_char in vocab:
+            vocab.remove(padding_char)
+        vocab.insert(0, padding_char)
         self.data = tf.strings.unicode_split(self.data, input_encoding='UTF-8', errors="ignore")
         self.vocab_size = len(vocab)
         self.char_to_code = tf.keras.layers.StringLookup(vocabulary=list(vocab), mask_token=None)

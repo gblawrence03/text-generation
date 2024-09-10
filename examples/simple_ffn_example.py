@@ -19,7 +19,7 @@ dataset = shakespeare.raw_text
 encoder = Characters(dataset)
                            
 # Define an input length (or context length) for the model
-input_length = 24
+input_length = 32
 
 # Grab some random train data in encoded format and split
 X, y = encoder.random_train_data_enc(input_length, 100000)
@@ -38,11 +38,12 @@ model = load_latest(model_name)
 model.evaluate(X_test, y_test, verbose=2)
 
 # Encode an input string for inference testing
-input_text = encoder.encode("Hello! This is a cool test.")
+input_text = "Thou liest, thou shag-hair'd villain!"
+input_encoded = encoder.encode(input_text)
 
 # Generate and decode output from the model
-generated = generate_next(model, input_text, input_length=input_length, temperature=0.7)
+_, generated = generate_next(model, input_encoded, input_length=input_length, temperature=0.7)
 decoded = encoder.decode(generated)
 
 # Print and format output, separating the input from the generated output
-print(f"{decoded[:len(input_text)]}|{decoded[-(len(generated) - len(input_text)):]}")
+print(f"{input_text}|{decoded}")

@@ -31,6 +31,7 @@ def generate_next(model, start_inputs, input_length=None, generation_length=50, 
         warnings.warn("Inferring model input length from start_inputs. It's recommended to specify the model's input length.")
         input_length = start_inputs.size
     
+    # If the input is too short, pad it with the encoder's padding token
     if input_length > start_inputs.size:
         start_inputs = np.pad(start_inputs, (input_length - start_inputs.size, 0), 'constant', constant_values=(0, 0))
 
@@ -39,4 +40,4 @@ def generate_next(model, start_inputs, input_length=None, generation_length=50, 
         c = predict_next(model, generated, input_length=input_length, temperature=temperature)
         generated = np.append(generated, c)
 
-    return generated
+    return start_inputs, generated[-generation_length:]

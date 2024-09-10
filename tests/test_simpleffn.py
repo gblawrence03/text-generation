@@ -57,10 +57,11 @@ class TestSimpleFFNModel(unittest.TestCase):
         print(self.encoder.decode(c))
 
         # Test sequence generation
-        input_text = self.encoder.encode("Hello! This is a cool test.")
-        generated = generate_next(model, input_text, input_length=input_length, temperature=0.7)
+        input_text = "Hello! This is a cool test."
+        input_encoded = self.encoder.encode(input_text)
+        _, generated = generate_next(model, input_encoded, input_length=input_length, temperature=0.7)
         decoded = self.encoder.decode(generated)
-        print(f"{decoded[:len(input_text)]}|{decoded[-(len(generated) - len(input_text)):]}")
+        print(f"{input_text}|{decoded}")
     
     @unittest.skip
     def run_rescale_test(self, model, vocab_size, test_input):
