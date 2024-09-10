@@ -1,1 +1,2 @@
-import common
+from models import *
+from tests import *
