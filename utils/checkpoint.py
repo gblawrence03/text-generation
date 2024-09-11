@@ -49,5 +49,32 @@ def latest_checkpoint(checkpoint_dir):
         latest = max(found_numbers, key=lambda f: found_numbers[f])
         return os.path.join(checkpoint_dir, latest)
     return None
-    
-        
+
+class ResumeModelCheckpoint(keras.callbacks.ModelCheckpoint):
+    '''
+    This subclass allows us to specify a `initial_epoch` for the ModelCheckpoint callback
+    so that the `epoch` parameter that's passed to the checkpoint path string format
+    can take into account a previous training session. 
+    '''
+    def __init__(self,
+        filepath,
+        monitor="val_loss",
+        verbose=0,
+        save_best_only=False,
+        save_weights_only=False,
+        mode="auto",
+        save_freq="epoch",
+        initial_epoch=0,
+        initial_value_threshold=None
+    ):
+        self.initial_epoch = initial_epoch
+        super().__init__(filepath, 
+                         monitor=monitor, 
+                         verbose=verbose, 
+                         save_best_only=save_best_only, 
+                         save_weights_only=save_weights_only, 
+                         mode=mode, save_freq=save_freq, 
+                         initial_value_threshold=initial_value_threshold)
+
+    def _save_model(self, epoch, batch, logs):
+        return super()._save_model(self.initial_epoch + epoch, batch, logs)

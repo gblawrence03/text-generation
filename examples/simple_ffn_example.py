@@ -25,14 +25,17 @@ input_length = 32
 X, y = encoder.random_train_data_enc(input_length, 100000)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
-# Create a SimpleFFN model
-model = SimpleFFNModel(encoder.vocab_size, hidden_layers_units=[128, 128, 128])
+# Try to load existing SimpleFFN model
+try:
+    print("Looking for existing model...")
+    model = load_latest(model_name)
+except FileNotFoundError as e:
+    # Create one if not found
+    print("Model not found, creating new one...")
+    model = SimpleFFNModel(encoder.vocab_size, hidden_layers_units=[128, 128, 128])
 
 # Train the model on the training data and save checkpoints
 train(model, X_train, y_train, epochs=10, batch_size=32, save_name=model_name)
-
-# Load the model (can be omitted for this single session example)
-model = load_latest(model_name)
 
 # Evaluate the model
 model.evaluate(X_test, y_test, verbose=2)

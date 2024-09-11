@@ -1,10 +1,12 @@
 """Provides functions for training models.
 """
 
+import csv
 import math
 import tensorflow as tf
+from utils.checkpoint import ResumeModelCheckpoint
 
-def train(model, X, y, epochs=10, batch_size=32, save_name=None, save_freq=5):
+def train(model, X, y, epochs=10, batch_size=32, save_name=None, save_freq=5, resume=True):
     """Trains a model using :param:`model.fit()`.
 
     :param model: Model to be trained.
@@ -22,19 +24,36 @@ def train(model, X, y, epochs=10, batch_size=32, save_name=None, save_freq=5):
     :type save_name: str, optional
     :param save_freq: How many epochs between which checkpoints are made., defaults to 5
     :type save_freq: int, optional
+    :param resume: Whether to overwrite (false) or resume (true) existing logs and checkpoints, defaults to True
+    :type resume: bool, optional
     """    
+
     model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
     callbacks = []
+
     if save_name is not None:
+        start_epochs = 0
+        log_path = f"checkpoints/{save_name}/log.csv"
+        hist_callback = tf.keras.callbacks.CSVLogger(log_path, append=resume)
+        if resume:
+            # Look for existing log to grab start_epochs from
+            try:
+                with open(log_path) as f:
+                    data = list(csv.DictReader(f))
+                    start_epochs = len(list(data))
+            except FileNotFoundError:
+                pass
+
         # TODO: Get this to work properly with save_weights_only=True
-        n_batches = math.ceil(len(y) / batch_size)
         checkpoint_path = "checkpoints/" + save_name + "/cp-{epoch:04d}.keras"
-        # TODO: Continuity of epochs in the save name between training sessions
-        cp_callback = tf.keras.callbacks.ModelCheckpoint(
+        n_batches = math.ceil(len(y) / batch_size)
+        cp_callback = ResumeModelCheckpoint(
             filepath=checkpoint_path,
             verbose=1,
             save_weights_only=False,
-            save_freq=int(save_freq * n_batches)
+            save_freq=int(save_freq * n_batches),
+            initial_epoch=start_epochs
         )
-        callbacks.append(cp_callback)
+        
+        callbacks.extend([cp_callback, hist_callback])
     model.fit(X, y, epochs=epochs, batch_size=batch_size, verbose=2, callbacks=callbacks)
