@@ -27,8 +27,8 @@ def train(model, X, y, epochs=10, batch_size=32, save_name=None, save_freq=5, re
     :param resume: Whether to overwrite (false) or resume (true) existing logs and checkpoints, defaults to True
     :type resume: bool, optional
     """    
-
-    model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+    loss = tf.losses.SparseCategoricalCrossentropy(from_logits=True)
+    model.compile(optimizer='adam', loss=loss, metrics=['accuracy'])
     callbacks = []
 
     if save_name is not None:
