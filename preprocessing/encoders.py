@@ -31,6 +31,14 @@ class Characters(Encoder):
         y = sequences[:,-1]
         return (X, y) 
     
+    def new_random_train_data_enc(self, sequence_length, n):
+        ids = self.int_encoded.numpy()
+        start_indices = np.random.choice(len(ids) - sequence_length, n, replace=False)
+        sequences = np.array([ids[start:start+sequence_length + 1] for start in start_indices])
+        X = sequences[:,:sequence_length-1]
+        y = sequences[:,-(sequence_length-1):]
+        return X, y
+    
     def random_train_data_raw(self, input_length, n):
         start_indices = np.random.choice(len(self.data) - input_length, n, replace=False)
         sequences = np.array([self.data[start:start+input_length + 1] for start in start_indices])

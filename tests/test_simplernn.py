@@ -21,12 +21,11 @@ class TestSimpleFFNModel(unittest.TestCase):
     def test_train_simple_rnn(self):
         print("Getting sequences...")
         input_length = 24
-        X, y = self.encoder.random_train_data_enc(input_length, 10000)
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
-        model = SimpleRNNModel(self.encoder.vocab_size, 64, 256)
+        X, y = self.encoder.new_random_train_data_enc(input_length, 100000)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2) 
+        model = SimpleRNNModel(self.encoder.vocab_size, 128, 512)
 
         print("Training...")
-        print(y_train.shape)
         train(model, X_train, y_train, epochs=5, batch_size=32, save_name="test")
 
         print("Loading...")

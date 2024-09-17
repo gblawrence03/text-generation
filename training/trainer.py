@@ -3,6 +3,7 @@
 
 import csv
 import math
+import os
 import tensorflow as tf
 from utils.checkpoint import ResumeModelCheckpoint
 
@@ -42,7 +43,9 @@ def train(model, X, y, epochs=10, batch_size=32, save_name=None, save_freq=5, re
                     data = list(csv.DictReader(f))
                     start_epochs = len(list(data))
             except FileNotFoundError:
-                pass
+                # Make the directory and file if it doesn't exist
+                os.makedirs(os.path.dirname(log_path), exist_ok=True)
+                f = open(log_path, 'x')
 
         # TODO: Get this to work properly with save_weights_only=True
         checkpoint_path = "checkpoints/" + save_name + "/cp-{epoch:04d}.keras"
