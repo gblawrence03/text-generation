@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 
 class SimpleRNNModel(tf.keras.Model):
     def __init__(self, vocab_size, embedding_dim, rnn_units, **kwargs):
@@ -22,6 +23,35 @@ class SimpleRNNModel(tf.keras.Model):
             return x, states
         else:
             return x
+        
+    def predict_next(self, inputs, temperature=0, states=None):
+        inputs = np.array(inputs).reshape(1, -1)
+
+        preds, states = self(inputs, states=states, return_state=True)
+        
+        preds = preds[:,-1,:]
+        
+        if temperature != 0:
+            preds /= temperature
+
+            predicted_ids = tf.random.categorical(preds, num_samples=1)
+            c = tf.squeeze(predicted_ids, axis=-1)
+            
+        else:
+            c = np.argmax(preds)
+        return c, states
+    
+    def generate_next(self, start_inputs, generation_length=50, temperature=0):
+        start_inputs = np.array(start_inputs).flatten()
+
+        generated=start_inputs
+        c=start_inputs
+        states = None
+        for _ in range(generation_length):
+            c, states = self.predict_next(c, temperature=temperature, states=states)
+            generated = np.append(generated, c)
+
+        return start_inputs, generated[-generation_length:]
     
     def get_config(self): 
         config = {'vocab_size': self.vocab_size, 'embedding_dim': self.embedding_dim, 'rnn_units': self.rnn_units}

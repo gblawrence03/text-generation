@@ -11,19 +11,19 @@ class Encoder():
 class Characters(Encoder):
     def __init__(self, data, padding_char=' '):
         super().__init__(data)
-        vocab = sorted(set(self.data))
+        self.vocab = sorted(set(self.data))
         # Add placeholder character for vocab
-        if padding_char in vocab:
-            vocab.remove(padding_char)
-        vocab.insert(0, padding_char)
+        if padding_char in self.vocab:
+            self.vocab.remove(padding_char)
+        self.vocab.insert(0, padding_char)
         self.data = tf.strings.unicode_split(self.data, input_encoding='UTF-8', errors="ignore")
-        self.vocab_size = len(vocab)
-        self.char_to_code = tf.keras.layers.StringLookup(vocabulary=list(vocab), mask_token=None)
-        self.code_to_char = tf.keras.layers.StringLookup(
-            vocabulary = self.char_to_code.get_vocabulary(), mask_token=None, invert=True)
-        self.int_encoded = self.char_to_code(self.data) - 1 # StringLookup indexes start at 0 annoyingly 
+        self.char_to_code = idsFromCharsLayer(list(self.vocab))
+        self.code_to_char = charsFromIdsLayer(list(self.vocab))
+        self.vocab_size = len(self.get_vocab())
+        self.int_encoded = self.char_to_code(self.data)
+        self.encoded_dataset = tf.data.Dataset.from_tensor_slices(self.int_encoded)
 
-    def random_train_data_enc(self, input_length, n):
+    def next_char_training_data(self, input_length, n):
         ids = self.int_encoded.numpy()
         start_indices = np.random.choice(len(ids) - input_length, n, replace=False)
         sequences = np.array([ids[start:start+input_length + 1] for start in start_indices])
@@ -31,13 +31,30 @@ class Characters(Encoder):
         y = sequences[:,-1]
         return (X, y) 
     
-    def new_random_train_data_enc(self, sequence_length, n):
+    def shifted_sequence_training_data(self, sequence_length, n):
         ids = self.int_encoded.numpy()
         start_indices = np.random.choice(len(ids) - sequence_length, n, replace=False)
         sequences = np.array([ids[start:start+sequence_length + 1] for start in start_indices])
-        X = sequences[:,:sequence_length-1]
-        y = sequences[:,-(sequence_length-1):]
+        X = sequences[:,:-1]
+        y = sequences[:,1:]
         return X, y
+    
+    # TODO: Dataset for other training data types, remove old methods
+    def tf_shifted_sequence_training_data(self, seq_length, n=None, batch_size=64, BUFFER_SIZE=10000):
+        ids = self.int_encoded.numpy()
+        if n is None:
+            sequences = self.encoded_dataset.batch(seq_length+1, drop_remainder=True)
+        else:
+            start_indices = np.random.choice(len(ids) - seq_length, n, replace=False)
+            sequences = np.array([ids[start:start+seq_length + 1] for start in start_indices])
+            sequences = tf.data.Dataset.from_tensor_slices(sequences)
+
+        dataset = sequences.map(lambda seq: (seq[:-1], seq[1:]))
+        dataset = (dataset
+                   .shuffle(BUFFER_SIZE)
+                   .batch(batch_size, drop_remainder=True)
+                   .prefetch(tf.data.experimental.AUTOTUNE))
+        return dataset
     
     def random_train_data_raw(self, input_length, n):
         start_indices = np.random.choice(len(self.data) - input_length, n, replace=False)
@@ -57,12 +74,29 @@ class Characters(Encoder):
             return self.int_encoded
         else:
             text_encode = tf.strings.unicode_split(text_encode, input_encoding='UTF-8', errors="ignore")
-            return self.char_to_code(text_encode) - 1
+            return self.char_to_code(text_encode)
         
     def decode(self, text_decode = None):
         if text_decode is None:
-            chars = self.code_to_char(self.int_encoded + 1)
+            chars = self.code_to_char(self.int_encoded)
         else:
             text_decode = np.atleast_1d(text_decode)
-            chars = self.code_to_char(text_decode + 1)
+            chars = self.code_to_char(text_decode)
         return tf.strings.reduce_join(chars, axis=-1).numpy().decode("utf-8")
+    
+    def get_vocab(self):
+        return self.char_to_code.get_vocabulary()
+
+class idsFromCharsLayer(tf.keras.layers.StringLookup):
+    def __init__(self, vocab):
+        super().__init__(vocabulary=list(vocab), mask_token=None)
+
+    def call(self, inputs):
+        return super().call(inputs)
+    
+class charsFromIdsLayer(tf.keras.layers.StringLookup):
+    def __init__(self, vocab):
+        super().__init__(vocabulary=list(vocab), mask_token=None, invert=True)
+
+    def call(self, inputs):
+        return super().call(inputs)

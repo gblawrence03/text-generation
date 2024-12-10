@@ -1,4 +1,7 @@
 from keras import Model, layers
+import numpy as np
+import tensorflow as tf
+import warnings
 
 class SimpleFFNModel(Model):
     """Simple feedfoward generation model. 
@@ -44,6 +47,48 @@ class SimpleFFNModel(Model):
         config = {'vocab_size': self.vocab_size, 'hidden_layers_units': self.hidden_layers_units}
         base_config = super().get_config()
         return dict(list(base_config.items()) + list(config.items()))
+    
+    def predict_next(self, inputs, temperature=0, input_length=None):
+        inputs = np.array(inputs).reshape(1, -1)
+
+        if input_length is None:
+            input_length = inputs.size
+
+        if input_length > inputs.size:
+            inputs = np.pad(inputs, ((0, 0), (input_length - inputs.size, 0)), 'constant', constant_values=(0, 0))
+
+        inputs = inputs[:, -input_length:]
+
+        preds = self.predict(inputs[:, -input_length:], verbose=0).flatten()
+
+        # TODO: Find out why RNN temperature method doesn't work here
+        if temperature != 0:
+            preds = np.log(preds + 1e-10) / temperature
+            exp_preds = np.exp(preds)
+            preds = exp_preds / np.sum(exp_preds)
+            c = np.random.choice(len(preds), p=preds)
+        else:
+            c = np.argmax(preds)
+        return c
+    
+    def generate_next(self, start_inputs, input_length=None, generation_length=50, temperature=0):
+        start_inputs = np.array(start_inputs).flatten()
+
+        if (input_length == None):
+            warnings.warn("Inferring model input length from start_inputs. It's recommended to specify the model's input length.")
+            input_length = start_inputs.size
+    
+        # If the input is too short, pad it with the encoder's padding token
+        if input_length > start_inputs.size:
+            start_inputs = np.pad(start_inputs, (input_length - start_inputs.size, 0), 'constant', constant_values=(0, 0))
+
+        generated=start_inputs
+        c=start_inputs
+        for _ in range(generation_length):
+            c = self.predict_next(generated, input_length=input_length, temperature=temperature)
+            generated = np.append(generated, c)
+
+        return start_inputs, generated[-generation_length:]
     
     @classmethod 
     def from_config(cls, config):

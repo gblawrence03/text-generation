@@ -5,9 +5,10 @@ import csv
 import math
 import os
 import tensorflow as tf
+from tqdm.keras import TqdmCallback
 from utils.checkpoint import ResumeModelCheckpoint
 
-def train(model, X, y, epochs=10, batch_size=32, save_name=None, save_freq=5, resume=True):
+def train(model, X, y=None, epochs=10, batch_size=32, save_name=None, save_freq=5, resume=True):
     """Trains a model using :param:`model.fit()`.
 
     :param model: Model to be trained.
@@ -28,6 +29,7 @@ def train(model, X, y, epochs=10, batch_size=32, save_name=None, save_freq=5, re
     :param resume: Whether to overwrite (false) or resume (true) existing logs and checkpoints, defaults to True
     :type resume: bool, optional
     """    
+    # TODO: FFN doesn't need from_logits = True. Fix
     loss = tf.losses.SparseCategoricalCrossentropy(from_logits=True)
     model.compile(optimizer='adam', loss=loss, metrics=['accuracy'])
     callbacks = []
@@ -49,7 +51,11 @@ def train(model, X, y, epochs=10, batch_size=32, save_name=None, save_freq=5, re
 
         # TODO: Get this to work properly with save_weights_only=True
         checkpoint_path = "checkpoints/" + save_name + "/cp-{epoch:04d}.keras"
-        n_batches = math.ceil(len(y) / batch_size)
+        if y is None:
+            # Assume X is a dataset, split into batches
+            n_batches = int(tf.data.experimental.cardinality(X))
+        else:
+            n_batches = math.ceil(len(y) / batch_size)
         cp_callback = ResumeModelCheckpoint(
             filepath=checkpoint_path,
             verbose=1,
@@ -59,4 +65,11 @@ def train(model, X, y, epochs=10, batch_size=32, save_name=None, save_freq=5, re
         )
         
         callbacks.extend([cp_callback, hist_callback])
-    model.fit(X, y, epochs=epochs, batch_size=batch_size, verbose=2, callbacks=callbacks)
+    
+    callbacks.extend([TqdmCallback(verbose=2)])
+    
+    if y is None:
+        # Assume X is dataset
+        model.fit(X, epochs=epochs, verbose=2, callbacks=callbacks)
+    else: 
+        model.fit(X, y, epochs=epochs, batch_size=batch_size, verbose=2, callbacks=callbacks)

@@ -1,28 +1,29 @@
 import sys
 from os import path
-from sklearn.model_selection import train_test_split
 
 sys.path.append( path.dirname( path.dirname( path.abspath(__file__) ) ) )
-from models.simple_ffn import SimpleFFNModel
+from models.simple_rnn import SimpleRNNModel
 from training.trainer import train
 from datasets.datasets import shakespeare
 from preprocessing.encoders import Characters
 from utils.checkpoint import load_latest
 
-model_name = "example-ffn"
+model_name = "example-rnn"
 
 # Grab the Shakespeare text dataset
 dataset = shakespeare.raw_text
 
 # Create the character encoder for the dataset
-encoder = Characters(dataset)
-                           
-# Define an input length (or context length) for the model
-input_length = 32
+encoder = Characters(dataset)                    
 
 # Grab some random train data in encoded format and split
-X, y = encoder.next_char_training_data(input_length, 100000)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+n_sequences = 10000
+batch_size = 64
+dataset = encoder.tf_shifted_sequence_training_data(50, n_sequences, batch_size=batch_size)
+dataset_size = n_sequences // batch_size
+train_size = int(0.8 * dataset_size)
+train_dataset = dataset.take(train_size)
+test_dataset = dataset.skip(train_size)
 
 # Try to load existing SimpleFFN model
 try:
@@ -31,20 +32,20 @@ try:
 except FileNotFoundError as e:
     # Create one if not found
     print("Model not found, creating new one...")
-    model = SimpleFFNModel(encoder.vocab_size, hidden_layers_units=[128, 128, 128])
+    model = SimpleRNNModel(encoder.vocab_size, 128, 256)
 
 # Train the model on the training data and save checkpoints
-train(model, X_train, y_train, epochs=10, batch_size=32, save_name=model_name)
+train(model, train_dataset, epochs=10, batch_size=32, save_name=model_name)
 
 # Evaluate the model
-model.evaluate(X_test, y_test, verbose=0)
+model.evaluate(test_dataset, verbose=2)
 
 # Encode an input string for inference testing
 input_text = "Thou liest, thou shag-hair'd villain!"
 input_encoded = encoder.encode(input_text)
 
 # Generate and decode output from the model
-_, generated = model.generate_next(input_encoded, input_length=input_length, temperature=0.7)
+_, generated = model.generate_next(input_encoded, temperature=0.7)
 decoded = encoder.decode(generated)
 
 # Print and format output, separating the input from the generated output
