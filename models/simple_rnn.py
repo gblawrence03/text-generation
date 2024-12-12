@@ -13,6 +13,7 @@ class SimpleRNNModel(tf.keras.Model):
                                              return_state=True)
         self.dense = tf.keras.layers.Dense(vocab_size)
 
+    @tf.function
     def call(self, inputs, states=None, return_state=None, training=False):
         x = inputs
         x = self.embedding(x, training=training)

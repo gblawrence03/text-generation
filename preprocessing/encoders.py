@@ -9,14 +9,14 @@ class Encoder():
         self.data = data
 
 class Characters(Encoder):
-    def __init__(self, data, padding_char=' '):
+    def __init__(self, data, padding_char=' ', encoding="UTF-8"):
         super().__init__(data)
         self.vocab = sorted(set(self.data))
         # Add placeholder character for vocab
         if padding_char in self.vocab:
             self.vocab.remove(padding_char)
         self.vocab.insert(0, padding_char)
-        self.data = tf.strings.unicode_split(self.data, input_encoding='UTF-8', errors="ignore")
+        self.data = tf.strings.unicode_split(self.data, input_encoding=encoding, errors="ignore")
         self.char_to_code = idsFromCharsLayer(list(self.vocab))
         self.code_to_char = charsFromIdsLayer(list(self.vocab))
         self.vocab_size = len(self.get_vocab())

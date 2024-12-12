@@ -1,14 +1,16 @@
 import numpy as np 
 import os
+from pathlib import Path
 
 class Dataset:
-    def __init__(self, filepath):
+    def __init__(self, filepath, encoding="UTF-8"):
+        self.encoding = encoding
         self.filepath = filepath
         self.load_data()
 
     def load_data(self):
         processed_lines = []
-        with open(self.filepath, 'r') as file:
+        with open(self.filepath, 'r', encoding=self.encoding) as file:
             for line in file:
                 # Strip the line of leading and trailing whitespace (including newlines)
                 stripped_line = line.strip()
@@ -21,4 +23,7 @@ class Dataset:
         # Concatenate all the lines with a space between each
         self.raw_text = '\n'.join(processed_lines)
     
-shakespeare = Dataset(os.path.join(__file__, '../data/shakespeare_alllines.txt'))
+data_path = os.path.join(os.path.dirname(__file__), "/data")
+shakespeare = Dataset(os.path.join(os.path.dirname(__file__), 'data/shakespeare_alllines.txt'))
+#shakespeare = Dataset('/mnt/c/Users/georg/Documents/GitHub/text_generation/datasets/data/shakespeare_alllines.txt')
+#human_chat = Dataset(os.path.join(os.path.dirname(__file__), '/data/human_chat.txt'))
