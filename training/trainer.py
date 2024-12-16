@@ -8,7 +8,7 @@ import tensorflow as tf
 from tqdm.keras import TqdmCallback
 from utils.checkpoint import ResumeModelCheckpoint
 
-def train(model, X, y=None, epochs=10, batch_size=32, save_name=None, save_freq=5, resume=True):
+def train(model, X, y=None, epochs=10, batch_size=32, save_name=None, save_freq=5, resume=True, progress_bar="tf"):
     """Trains a model using :param:`model.fit()`.
 
     :param model: Model to be trained.
@@ -24,10 +24,13 @@ def train(model, X, y=None, epochs=10, batch_size=32, save_name=None, save_freq=
     :param save_name: Folder to save checkpoints in within /checkpoints. 
         If this is not specified, checkpoints will not be saved. Defaults to None
     :type save_name: str, optional
-    :param save_freq: How many epochs between which checkpoints are made., defaults to 5
+    :param save_freq: How many epochs between which checkpoints are made, defaults to 5
     :type save_freq: int, optional
     :param resume: Whether to overwrite (false) or resume (true) existing logs and checkpoints, defaults to True
     :type resume: bool, optional
+    :param progress_bar: Which training progress bar to use. Options: "tf", "tqdm", None. Defaults to "tf".
+    :type progress_bar: string, optional
+
     """    
     # TODO: FFN doesn't need from_logits = True. Fix
     loss = tf.losses.SparseCategoricalCrossentropy(from_logits=True)
@@ -50,7 +53,9 @@ def train(model, X, y=None, epochs=10, batch_size=32, save_name=None, save_freq=
                 f = open(log_path, 'x')
 
         # TODO: Get this to work properly with save_weights_only=True
-        checkpoint_path = "checkpoints/" + save_name + "/cp-{epoch:04d}.keras"
+        checkpoint_path = "checkpoints/" + save_name + "/cp-{epoch:04d}"
+        checkpoint_path += ".keras"
+
         if y is None:
             # Assume X is a dataset, split into batches
             n_batches = int(tf.data.experimental.cardinality(X))
@@ -66,10 +71,12 @@ def train(model, X, y=None, epochs=10, batch_size=32, save_name=None, save_freq=
         
         callbacks.extend([cp_callback, hist_callback])
     
-    callbacks.extend([TqdmCallback(verbose=2)])
+    verbose = 1 if progress_bar == "tf" else 0
+    if progress_bar == "tqdm":
+        callbacks.extend([TqdmCallback(verbose=2)])
     
     if y is None:
         # Assume X is dataset
-        model.fit(X, epochs=epochs, verbose=2, callbacks=callbacks)
+        model.fit(X, epochs=epochs, verbose=verbose, callbacks=callbacks)
     else: 
-        model.fit(X, y, epochs=epochs, batch_size=batch_size, verbose=2, callbacks=callbacks)
+        model.fit(X, y, epochs=epochs, batch_size=batch_size, verbose=verbose, callbacks=callbacks)

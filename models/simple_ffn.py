@@ -1,6 +1,5 @@
 from keras import Model, layers
 import numpy as np
-import tensorflow as tf
 import warnings
 
 class SimpleFFNModel(Model):
@@ -49,6 +48,19 @@ class SimpleFFNModel(Model):
         return dict(list(base_config.items()) + list(config.items()))
     
     def predict_next(self, inputs, temperature=0, input_length=None):
+        """Predict a single character
+
+        :param inputs: Encoded input sequence. If `input_length` is not specified, 
+            this must have the same length as inputs in training data. 
+        :type inputs: Array-like 
+        :param temperature: Softmax temperature, used to introduce variation, defaults to 0
+        :type temperature: int, optional
+        :param input_length: Specifies the length of input to be used. 
+            Pads or clips input if sizes do not match, defaults to None
+        :type input_length: int, optional
+        :return: Encoded output character
+        :rtype: Int
+        """
         inputs = np.array(inputs).reshape(1, -1)
 
         if input_length is None:
@@ -72,6 +84,20 @@ class SimpleFFNModel(Model):
         return c
     
     def generate_next(self, start_inputs, input_length=None, generation_length=50, temperature=0):
+        """Predict a sequence of characters
+
+        :param start_inputs: Starting string of characters to be used as input
+        :type start_inputs: array-like
+        :param input_length: Specifies the length of input to be used. 
+            Pads or clips input if sizes do not match, defaults to None
+        :type input_length: _type_, optional
+        :param generation_length: Number of characters to generate, defaults to 50
+        :type generation_length: int, optional
+        :param temperature: Softmax temperature, used to introduce variation, defaults to 0
+        :type temperature: int, optional
+        :return: Tuple containing start inputs and generated characters
+        :rtype: Tuple of arrays
+        """
         start_inputs = np.array(start_inputs).flatten()
 
         if (input_length == None):

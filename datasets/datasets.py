@@ -3,6 +3,8 @@ import os
 from pathlib import Path
 
 class Dataset:
+    """Holds a raw text dataset
+    """
     def __init__(self, filepath, encoding="UTF-8"):
         self.encoding = encoding
         self.filepath = filepath
@@ -25,5 +27,3 @@ class Dataset:
     
 data_path = os.path.join(os.path.dirname(__file__), "/data")
 shakespeare = Dataset(os.path.join(os.path.dirname(__file__), 'data/shakespeare_alllines.txt'))
-#shakespeare = Dataset('/mnt/c/Users/georg/Documents/GitHub/text_generation/datasets/data/shakespeare_alllines.txt')
-#human_chat = Dataset(os.path.join(os.path.dirname(__file__), '/data/human_chat.txt'))
